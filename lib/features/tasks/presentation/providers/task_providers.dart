@@ -36,7 +36,7 @@ bool _sameDay(DateTime? a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-final FutureProvider.family<TaskModel?, String> taskByIdProvider =
+final FutureProviderFamily<TaskModel?, String> taskByIdProvider =
     FutureProvider.family<TaskModel?, String>((Ref ref, String id) {
   return ref.watch(taskRepositoryProvider).getById(id);
 });

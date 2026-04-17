@@ -20,7 +20,6 @@
     <application
         android:label="TimeManager AI"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="false"
         android:allowBackup="false">
 

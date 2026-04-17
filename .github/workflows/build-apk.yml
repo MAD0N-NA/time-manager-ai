@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # позволяет запустить вручную из вкладки Actions
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build APK

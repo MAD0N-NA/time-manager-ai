@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../core/errors/failures.dart';
@@ -73,7 +74,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       setState(() => _listening = true);
       await _speech.listen(
         localeId: 'ru_RU',
-        onResult: (stt.SpeechRecognitionResult r) {
+        onResult: (SpeechRecognitionResult r) {
           setState(() => _input.text = r.recognizedWords);
           if (r.finalResult) {
             setState(() => _listening = false);

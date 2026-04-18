@@ -112,8 +112,8 @@ class ClaudeApiClient {
       );
     }
 
-    const int maxRetries = 3;
-    Duration delay = const Duration(seconds: 1);
+    const int maxRetries = 2;
+    Duration delay = const Duration(seconds: 2);
 
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -173,7 +173,24 @@ class ClaudeApiClient {
           return FailureResult<ClaudeResponse>(ApiFailure('Некорректный запрос: $body', code, e));
         }
 
-        // Retry на 429/5xx и таймауты
+        if (code == 404) {
+          return FailureResult<ClaudeResponse>(
+            ApiFailure('Модель не найдена на OpenRouter. Проверьте slug в настройках.', code, e),
+          );
+        }
+
+        if (code == 429) {
+          return FailureResult<ClaudeResponse>(
+            ApiFailure(
+              'Превышен дневной лимит бесплатных запросов OpenRouter (50/день). '
+              'Попробуйте завтра или пополните баланс на openrouter.ai/credits.',
+              code,
+              e,
+            ),
+          );
+        }
+
+        // Retry только на 5xx и таймауты
         if (attempt == maxRetries - 1) {
           return FailureResult<ClaudeResponse>(
             NetworkFailure('Не удалось связаться с OpenRouter: ${e.message}', e),

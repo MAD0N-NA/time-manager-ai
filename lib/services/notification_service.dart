@@ -28,7 +28,7 @@ class NotificationService {
     }
 
     const AndroidInitializationSettings androidInit =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_notification');
     const InitializationSettings settings = InitializationSettings(android: androidInit);
 
     await _plugin.initialize(
@@ -82,45 +82,61 @@ class NotificationService {
     final DateTime when = task.dueDate!.subtract(Duration(minutes: task.reminderMinutesBefore!));
     if (when.isBefore(DateTime.now())) return;
 
-    await _plugin.zonedSchedule(
-      task.id.hashCode,
-      'Скоро: ${task.title}',
-      task.description ?? 'Не забудьте выполнить задачу',
-      tz.TZDateTime.from(when, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          AppConstants.notifChannelTasks,
-          AppConstants.notifChannelTasksName,
-          importance: Importance.high,
-          priority: Priority.high,
-          actions: <AndroidNotificationAction>[
-            AndroidNotificationAction('complete', 'Выполнено', showsUserInterface: false),
-            AndroidNotificationAction('snooze', 'Отложить 10 мин', showsUserInterface: false),
-          ],
+    try {
+      await _plugin.zonedSchedule(
+        task.id.hashCode,
+        'Скоро: ${task.title}',
+        task.description ?? 'Не забудьте выполнить задачу',
+        tz.TZDateTime.from(when, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            AppConstants.notifChannelTasks,
+            AppConstants.notifChannelTasksName,
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: 'ic_notification',
+            actions: <AndroidNotificationAction>[
+              AndroidNotificationAction('complete', 'Выполнено', showsUserInterface: false),
+              AndroidNotificationAction('snooze', 'Отложить 10 мин', showsUserInterface: false),
+            ],
+          ),
         ),
-      ),
-      payload: 'task:${task.id}',
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    );
+        payload: 'task:${task.id}',
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e, st) {
+      appLogger.w('scheduleTaskReminder failed: $e\n$st');
+    }
   }
 
-  Future<void> cancelTaskReminder(String taskId) => _plugin.cancel(taskId.hashCode);
+  Future<void> cancelTaskReminder(String taskId) async {
+    try {
+      await _plugin.cancel(taskId.hashCode);
+    } catch (e) {
+      appLogger.w('cancelTaskReminder failed: $e');
+    }
+  }
 
   Future<void> showPomodoroComplete({required String message}) async {
-    await _plugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
-      'Pomodoro завершён',
-      message,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          AppConstants.notifChannelPomodoro,
-          AppConstants.notifChannelPomodoroName,
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _plugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
+        'Pomodoro завершён',
+        message,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            AppConstants.notifChannelPomodoro,
+            AppConstants.notifChannelPomodoroName,
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: 'ic_notification',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e, st) {
+      appLogger.w('showPomodoroComplete failed: $e\n$st');
+    }
   }
 
   Future<void> showSmartReminder({
@@ -129,38 +145,48 @@ class NotificationService {
     required String body,
     bool urgent = false,
   }) async {
-    await _plugin.show(
-      taskId.hashCode ^ DateTime.now().minute,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          AppConstants.notifChannelTasks,
-          AppConstants.notifChannelTasksName,
-          importance: urgent ? Importance.max : Importance.high,
-          priority: urgent ? Priority.max : Priority.high,
+    try {
+      await _plugin.show(
+        taskId.hashCode ^ DateTime.now().minute,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            AppConstants.notifChannelTasks,
+            AppConstants.notifChannelTasksName,
+            importance: urgent ? Importance.max : Importance.high,
+            priority: urgent ? Priority.max : Priority.high,
+            icon: 'ic_notification',
+          ),
         ),
-      ),
-      payload: 'task:$taskId',
-    );
+        payload: 'task:$taskId',
+      );
+    } catch (e, st) {
+      appLogger.w('showSmartReminder failed: $e\n$st');
+    }
   }
 
   Future<void> showDigest({required String title, required String body}) async {
-    await _plugin.show(
-      'digest'.hashCode,
-      title,
-      body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          AppConstants.notifChannelDigest,
-          AppConstants.notifChannelDigestName,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          styleInformation: BigTextStyleInformation(''),
+    try {
+      await _plugin.show(
+        'digest'.hashCode,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            AppConstants.notifChannelDigest,
+            AppConstants.notifChannelDigestName,
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            icon: 'ic_notification',
+            styleInformation: BigTextStyleInformation(''),
+          ),
         ),
-      ),
-      payload: 'digest',
-    );
+        payload: 'digest',
+      );
+    } catch (e, st) {
+      appLogger.w('showDigest failed: $e\n$st');
+    }
   }
 
   void _onNotificationResponse(NotificationResponse response) {

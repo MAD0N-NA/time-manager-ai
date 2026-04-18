@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
-import 'core/utils/logger.dart';
-import 'services/background_service.dart';
 import 'services/notification_service.dart';
 import 'services/settings_service.dart';
 
@@ -26,13 +24,6 @@ Future<void> main() async {
   // Инициализация уведомлений до runApp
   final NotificationService notifications = NotificationService();
   await notifications.init();
-
-  // WorkManager для фоновых задач
-  try {
-    await BackgroundService().init();
-  } catch (e) {
-    appLogger.w('Background service init failed: $e');
-  }
 
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 

@@ -7,7 +7,7 @@ class AppConstants {
   // OpenRouter (OpenAI-совместимый API, работает из РФ без VPN)
   static const String openRouterBaseUrl = 'https://openrouter.ai/api/v1/chat/completions';
   // Бесплатные модели — суффикс :free
-  static const String defaultModel = 'deepseek/deepseek-chat-v3.1:free';
+  static const String defaultModel = 'deepseek/deepseek-chat:free';
   static const String fastModel = 'meta-llama/llama-3.3-70b-instruct:free';
 
   // Хранилище

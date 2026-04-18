@@ -4,15 +4,15 @@ class AppConstants {
 
   static const String appName = 'TimeManager AI';
 
-  // Claude API
-  static const String claudeBaseUrl = 'https://api.anthropic.com/v1/messages';
-  static const String claudeApiVersion = '2023-06-01';
-  static const String defaultModel = 'claude-opus-4-7';
-  static const String fastModel = 'claude-haiku-4-5-20251001';
+  // Gemini API (Google AI Studio)
+  // Базовый URL без модели — модель подставляется в клиенте.
+  static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+  static const String defaultModel = 'gemini-2.0-flash';
+  static const String fastModel = 'gemini-2.0-flash-lite';
 
   // Хранилище
-  static const String secureStorageApiKey = 'claude_api_key';
-  static const String prefsModelKey = 'claude_model';
+  static const String secureStorageApiKey = 'gemini_api_key';
+  static const String prefsModelKey = 'gemini_model';
   static const String prefsWorkStartHour = 'work_start_hour';
   static const String prefsWorkEndHour = 'work_end_hour';
   static const String prefsDailyDigestHour = 'daily_digest_hour';

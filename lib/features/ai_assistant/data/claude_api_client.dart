@@ -9,7 +9,9 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/utils/logger.dart';
 
-/// Сообщение для Claude API.
+/// Сообщение для AI.
+/// Имена классов оставлены как ClaudeXxx, чтобы не переписывать use-cases,
+/// но внутри клиент ходит в Gemini API.
 class ClaudeMessage {
   ClaudeMessage({required this.role, required this.content});
   final String role; // 'user' | 'assistant'
@@ -21,7 +23,7 @@ class ClaudeMessage {
       };
 }
 
-/// Параметры запроса к Claude.
+/// Параметры запроса к AI.
 class ClaudeRequest {
   ClaudeRequest({
     required this.messages,
@@ -37,16 +39,39 @@ class ClaudeRequest {
   final double temperature;
   final String? system;
 
-  Map<String, Object?> toJson() => <String, Object?>{
-        'model': model,
-        'max_tokens': maxTokens,
+  /// Преобразование в формат Gemini API.
+  Map<String, Object?> toGeminiJson() {
+    final List<Map<String, Object?>> contents = messages
+        .map((ClaudeMessage m) => <String, Object?>{
+              // Gemini использует 'user' и 'model' (не 'assistant').
+              'role': m.role == 'assistant' ? 'model' : 'user',
+              'parts': <Map<String, Object?>>[
+                <String, Object?>{'text': m.content},
+              ],
+            })
+        .toList();
+
+    final Map<String, Object?> body = <String, Object?>{
+      'contents': contents,
+      'generationConfig': <String, Object?>{
         'temperature': temperature,
-        if (system != null) 'system': system,
-        'messages': messages.map((ClaudeMessage m) => m.toJson()).toList(),
+        'maxOutputTokens': maxTokens,
+      },
+    };
+
+    if (system != null && system!.isNotEmpty) {
+      body['systemInstruction'] = <String, Object?>{
+        'parts': <Map<String, Object?>>[
+          <String, Object?>{'text': system},
+        ],
       };
+    }
+
+    return body;
+  }
 }
 
-/// Ответ Claude.
+/// Ответ AI.
 class ClaudeResponse {
   ClaudeResponse({
     required this.id,
@@ -65,7 +90,7 @@ class ClaudeResponse {
   final String model;
 }
 
-/// HTTP-клиент для Claude API.
+/// HTTP-клиент для Gemini API (имя сохранено ради обратной совместимости).
 class ClaudeApiClient {
   ClaudeApiClient({
     required FlutterSecureStorage storage,
@@ -101,18 +126,20 @@ class ClaudeApiClient {
       );
     }
 
+    // Gemini кладёт ключ в query-параметр.
+    final String url =
+        '${AppConstants.geminiBaseUrl}/${request.model}:generateContent?key=$apiKey';
+
     const int maxRetries = 3;
     Duration delay = const Duration(seconds: 1);
 
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
         final Response<dynamic> response = await _dio.post<dynamic>(
-          AppConstants.claudeBaseUrl,
-          data: request.toJson(),
+          url,
+          data: request.toGeminiJson(),
           options: Options(
             headers: <String, String>{
-              'x-api-key': apiKey,
-              'anthropic-version': AppConstants.claudeApiVersion,
               'content-type': 'application/json',
             },
             responseType: ResponseType.json,
@@ -120,27 +147,40 @@ class ClaudeApiClient {
         );
 
         final Map<String, dynamic> data = response.data as Map<String, dynamic>;
-        final List<dynamic> content = (data['content'] as List<dynamic>? ?? <dynamic>[]);
-        final String text = content
-            .whereType<Map<String, dynamic>>()
-            .where((Map<String, dynamic> b) => b['type'] == 'text')
-            .map((Map<String, dynamic> b) => b['text']?.toString() ?? '')
-            .join('\n')
-            .trim();
 
-        final Map<String, dynamic> usage = (data['usage'] as Map<String, dynamic>? ?? <String, dynamic>{});
+        // Извлекаем текст: candidates[0].content.parts[*].text
+        final List<dynamic> candidates = (data['candidates'] as List<dynamic>? ?? <dynamic>[]);
+        String text = '';
+        String? finishReason;
+        if (candidates.isNotEmpty) {
+          final Map<String, dynamic> first = candidates.first as Map<String, dynamic>;
+          finishReason = first['finishReason']?.toString();
+          final Map<String, dynamic>? content = first['content'] as Map<String, dynamic>?;
+          if (content != null) {
+            final List<dynamic> parts = (content['parts'] as List<dynamic>? ?? <dynamic>[]);
+            text = parts
+                .whereType<Map<String, dynamic>>()
+                .map((Map<String, dynamic> p) => p['text']?.toString() ?? '')
+                .join('\n')
+                .trim();
+          }
+        }
+
+        final Map<String, dynamic> usage =
+            (data['usageMetadata'] as Map<String, dynamic>? ?? <String, dynamic>{});
+
         return Success<ClaudeResponse>(
           ClaudeResponse(
-            id: data['id']?.toString() ?? '',
+            id: data['responseId']?.toString() ?? '',
             text: text,
-            stopReason: data['stop_reason']?.toString(),
-            inputTokens: (usage['input_tokens'] as int?) ?? 0,
-            outputTokens: (usage['output_tokens'] as int?) ?? 0,
-            model: data['model']?.toString() ?? request.model,
+            stopReason: finishReason,
+            inputTokens: (usage['promptTokenCount'] as int?) ?? 0,
+            outputTokens: (usage['candidatesTokenCount'] as int?) ?? 0,
+            model: data['modelVersion']?.toString() ?? request.model,
           ),
         );
       } on DioException catch (e) {
-        appLogger.w('Claude API error (attempt ${attempt + 1}): ${e.message}');
+        appLogger.w('Gemini API error (attempt ${attempt + 1}): ${e.message}');
         final int? code = e.response?.statusCode;
 
         if (code == 401 || code == 403) {
@@ -157,13 +197,13 @@ class ClaudeApiClient {
         // Retry на 429/5xx и таймауты
         if (attempt == maxRetries - 1) {
           return FailureResult<ClaudeResponse>(
-            NetworkFailure('Не удалось связаться с Claude: ${e.message}', e),
+            NetworkFailure('Не удалось связаться с Gemini: ${e.message}', e),
           );
         }
         await Future<void>.delayed(delay);
         delay *= 2;
       } catch (e, st) {
-        appLogger.e('Unexpected Claude API error', error: e, stackTrace: st);
+        appLogger.e('Unexpected Gemini API error', error: e, stackTrace: st);
         return FailureResult<ClaudeResponse>(UnknownFailure(e.toString(), e));
       }
     }

@@ -44,20 +44,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final String? key = await showDialog<String>(
       context: context,
       builder: (BuildContext c) => AlertDialog(
-        title: const Text('Gemini API-ключ'),
+        title: const Text('OpenRouter API-ключ'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Получите бесплатный ключ на aistudio.google.com/apikey',
+              'Получите бесплатный ключ на openrouter.ai → Keys',
               style: AppTextStyles.bodySmall,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: ctrl,
               decoration: const InputDecoration(
-                hintText: 'AIza...',
+                hintText: 'sk-or-v1-...',
                 prefixIcon: Icon(Icons.key),
               ),
               autofocus: true,
@@ -136,7 +136,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _hasKey ? Icons.check_circle : Icons.key_off,
                           color: _hasKey ? AppColors.accent : AppColors.warning,
                         ),
-                        title: const Text('Gemini API-ключ'),
+                        title: const Text('OpenRouter API-ключ'),
                         subtitle: Text(_hasKey ? 'Установлен' : 'Не задан'),
                         trailing: _hasKey
                             ? IconButton(
@@ -160,11 +160,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           itemBuilder: (_) => const <PopupMenuEntry<String>>[
                             PopupMenuItem<String>(
                               value: AppConstants.defaultModel,
-                              child: Text('Gemini 2.0 Flash'),
+                              child: Text('DeepSeek V3 (free)'),
                             ),
                             PopupMenuItem<String>(
                               value: AppConstants.fastModel,
-                              child: Text('Gemini 2.0 Flash Lite'),
+                              child: Text('Llama 3.3 70B (free)'),
                             ),
                           ],
                           icon: const Icon(Icons.more_vert),

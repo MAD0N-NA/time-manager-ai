@@ -4,15 +4,15 @@ class AppConstants {
 
   static const String appName = 'TimeManager AI';
 
-  // Gemini API (Google AI Studio)
-  // Базовый URL без модели — модель подставляется в клиенте.
-  static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-  static const String defaultModel = 'gemini-2.0-flash';
-  static const String fastModel = 'gemini-2.0-flash-lite';
+  // OpenRouter (OpenAI-совместимый API, работает из РФ без VPN)
+  static const String openRouterBaseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  // Бесплатные модели — суффикс :free
+  static const String defaultModel = 'deepseek/deepseek-chat-v3.1:free';
+  static const String fastModel = 'meta-llama/llama-3.3-70b-instruct:free';
 
   // Хранилище
-  static const String secureStorageApiKey = 'gemini_api_key';
-  static const String prefsModelKey = 'gemini_model';
+  static const String secureStorageApiKey = 'openrouter_api_key';
+  static const String prefsModelKey = 'ai_model';
   static const String prefsWorkStartHour = 'work_start_hour';
   static const String prefsWorkEndHour = 'work_end_hour';
   static const String prefsDailyDigestHour = 'daily_digest_hour';

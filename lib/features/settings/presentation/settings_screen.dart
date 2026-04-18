@@ -160,11 +160,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           itemBuilder: (_) => const <PopupMenuEntry<String>>[
                             PopupMenuItem<String>(
                               value: AppConstants.defaultModel,
-                              child: Text('DeepSeek V3 (free)'),
+                              child: Text('Llama 3.3 70B (free)'),
                             ),
                             PopupMenuItem<String>(
                               value: AppConstants.fastModel,
-                              child: Text('Llama 3.3 70B (free)'),
+                              child: Text('GPT-OSS 120B (free)'),
                             ),
                           ],
                           icon: const Icon(Icons.more_vert),

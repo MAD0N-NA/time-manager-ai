@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter --version)"
+      "Bash(flutter --version)",
+      "Bash(curl -s https://openrouter.ai/api/v1/models)",
+      "Bash(python -c \"import sys, json; data=json.load\\(sys.stdin\\); free=[m['id'] for m in data['data'] if ':free' in m['id']]; print\\('\\\\n'.join\\(free[:30]\\)\\)\")",
+      "Read(//tmp/**)"
     ]
   }
 }

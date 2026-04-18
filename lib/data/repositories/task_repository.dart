@@ -2,14 +2,16 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../services/notification_service.dart';
 import '../database/app_database.dart';
 import '../models/task_model.dart';
 
 const Uuid _uuid = Uuid();
 
 class TaskRepository {
-  TaskRepository(this._db);
+  TaskRepository(this._db, {this.notifications});
   final AppDatabase _db;
+  final NotificationService? notifications;
 
   Stream<List<TaskModel>> watchAll() {
     final SimpleSelectStatement<$TasksTable, TaskRow> q = _db.select(_db.tasks)
@@ -52,7 +54,9 @@ class TaskRepository {
   Future<List<TaskModel>> getForRange(DateTime from, DateTime to) async {
     final List<TaskRow> rows = await (_db.select(_db.tasks)
           ..where(($TasksTable t) =>
-              t.dueDate.isBetweenValues(from, to) | t.startTime.isBetweenValues(from, to)))
+              t.dueDate.isBetweenValues(from, to) |
+              t.startTime.isBetweenValues(from, to) |
+              t.completedAt.isBetweenValues(from, to)))
         .get();
     return rows.map(TaskModel.fromRow).toList();
   }
@@ -66,12 +70,18 @@ class TaskRepository {
   Future<TaskModel> create(TaskModel task) async {
     final TaskModel withId = task.id.isEmpty ? task.copyWith(id: _uuid.v4()) : task;
     await _db.into(_db.tasks).insert(withId.toCompanion());
+    await notifications?.scheduleTaskReminder(withId);
     return withId;
   }
 
   Future<void> update(TaskModel task) async {
     final TaskModel updated = task.copyWith(updatedAt: DateTime.now());
     await _db.update(_db.tasks).replace(updated.toCompanion());
+    // Перепланируем напоминание (сначала отменяем старое, потом ставим новое).
+    await notifications?.cancelTaskReminder(updated.id);
+    if (!updated.isCompleted) {
+      await notifications?.scheduleTaskReminder(updated);
+    }
   }
 
   Future<void> toggleComplete(String id) async {
@@ -88,6 +98,7 @@ class TaskRepository {
   }
 
   Future<void> delete(String id) async {
+    await notifications?.cancelTaskReminder(id);
     await (_db.delete(_db.tasks)..where(($TasksTable t) => t.id.equals(id))).go();
   }
 
@@ -102,5 +113,8 @@ class TaskRepository {
 }
 
 final Provider<TaskRepository> taskRepositoryProvider = Provider<TaskRepository>((Ref ref) {
-  return TaskRepository(ref.watch(appDatabaseProvider));
+  return TaskRepository(
+    ref.watch(appDatabaseProvider),
+    notifications: ref.watch(notificationServiceProvider),
+  );
 });

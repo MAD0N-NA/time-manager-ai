@@ -188,6 +188,7 @@ class _TaskFormSheetState extends State<TaskFormSheet> {
                     decoration: const InputDecoration(labelText: 'Напомнить'),
                     items: const <DropdownMenuItem<int?>>[
                       DropdownMenuItem<int?>(value: null, child: Text('Нет')),
+                      DropdownMenuItem<int?>(value: 1, child: Text('за 1 мин')),
                       DropdownMenuItem<int?>(value: 5, child: Text('за 5 мин')),
                       DropdownMenuItem<int?>(value: 15, child: Text('за 15 мин')),
                       DropdownMenuItem<int?>(value: 30, child: Text('за 30 мин')),
